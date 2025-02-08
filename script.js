@@ -11,6 +11,7 @@ window.addEventListener("DOMContentLoaded", () => {
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     lista = document.getElementById("lista");
     totalSpan = document.getElementById("total");
+    carregarListaAtual();
     carregarHistorico();
 });
 
@@ -26,7 +27,7 @@ async function adicionarItem() {
     }
 
     let { data, error } = await supabase
-        .from("compras")
+        .from("compras_ativas")
         .insert([{ nome, preco, quantidade, data_criacao: new Date().toISOString() }]);
 
     if (error) {
@@ -34,12 +35,94 @@ async function adicionarItem() {
         alert("Erro ao adicionar item.");
     } else {
         console.log("Item adicionado:", data);
-        carregarHistorico();
+        carregarListaAtual();
     }
 
     document.getElementById("nome").value = "";
     document.getElementById("preco").value = "";
     document.getElementById("quantidade").value = "";
+}
+
+// Carregar lista atual de compras para somar o total
+async function carregarListaAtual() {
+    if (!supabase) {
+        console.error("Supabase ainda não foi inicializado.");
+        return;
+    }
+
+    let { data, error } = await supabase
+        .from("compras_ativas")
+        .select("*")
+        .order("data_criacao", { ascending: false });
+
+    if (error) {
+        console.error("Erro ao carregar lista atual:", error);
+        alert("Erro ao carregar lista atual.");
+        return;
+    }
+
+    lista.innerHTML = "";
+    total = 0;
+
+    data.forEach(item => {
+        let precoTotal = item.preco * item.quantidade;
+        total += precoTotal;
+
+        let itemDiv = document.createElement("div");
+        itemDiv.classList.add("item");
+        itemDiv.innerHTML = `${item.nome} (x${item.quantidade}) - R$ ${precoTotal.toFixed(2)}
+            <button onclick="removerItem('${item.id}')">X</button>`;
+        lista.appendChild(itemDiv);
+    });
+
+    totalSpan.innerText = total.toFixed(2);
+}
+
+// Enviar lista atual para o histórico e limpar compras ativas
+// Enviar lista atual para o histórico e limpar compras ativas
+async function enviarParaHistorico() {
+    if (!supabase) {
+        console.error("Supabase ainda não foi inicializado.");
+        return;
+    }
+
+    let { data, error } = await supabase
+        .from("compras_ativas")
+        .select("*");
+
+    if (error || !data || data.length === 0) {
+        console.error("Erro ao carregar compras ativas:", error);
+        alert("Nenhuma compra para enviar ao histórico.");
+        return;
+    }
+
+    // Removendo o campo "id" para evitar conflito de chave primária
+    let historicoData = data.map(({ id, ...rest }) => ({ ...rest, data_criacao: new Date().toISOString() }));
+
+    let { error: insertError } = await supabase
+        .from("compras") // Movendo para compras sem id duplicado
+        .insert(historicoData);
+
+    if (insertError) {
+        console.error("Erro ao mover para histórico:", insertError);
+        alert("Erro ao enviar para o histórico.");
+        return;
+    }
+
+    // Correção: Deleta todos os registros da tabela "compras_ativas"
+    let { error: deleteError } = await supabase
+        .from("compras_ativas")
+        .delete()
+        .gt("id", "00000000-0000-0000-0000-000000000000"); // Garante que só deleta IDs válidos
+
+    if (deleteError) {
+        console.error("Erro ao limpar compras ativas:", deleteError);
+        alert("Erro ao limpar compras ativas.");
+        return;
+    }
+
+    carregarListaAtual();
+    carregarHistorico();
 }
 
 // Carregar histórico de compras
@@ -84,25 +167,5 @@ async function carregarHistorico() {
             let precoTotal = item.preco * item.quantidade;
             historicoDiv.innerHTML += `<p>${item.nome} (x${item.quantidade}) - R$ ${precoTotal.toFixed(2)}</p>`;
         });
-    }
-}
-
-// Remover item do banco
-async function removerItem(id) {
-    if (!supabase) {
-        console.error("Supabase ainda não foi inicializado.");
-        return;
-    }
-
-    let { error } = await supabase
-        .from("compras")
-        .delete()
-        .eq("id", id);
-
-    if (error) {
-        console.error("Erro ao remover item:", error);
-        alert("Erro ao remover item.");
-    } else {
-        carregarHistorico();
     }
 }
