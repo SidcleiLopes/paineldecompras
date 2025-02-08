@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Compras</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Carregar a biblioteca do Supabase antes do script.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Agora podemos carregar o script.js com defer -->
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <h2>Painel de Compras</h2>
+    <div id="painel">
+        <input type="text" id="nome" placeholder="Nome do Produto">
+        <input type="number" id="preco" placeholder="Preço" step="0.01">
+        <input type="number" id="quantidade" placeholder="Quantidade" min="1">
+        <button onclick="adicionarItem()">Adicionar</button>
+        <div id="lista"></div>
+        <div class="total">Total: R$ <span id="total">0.00</span></div>
+    </div>
+    <button onclick="carregarHistorico()">Ver Histórico</button>
+    <div id="historico"></div>
+</body>
+</html>

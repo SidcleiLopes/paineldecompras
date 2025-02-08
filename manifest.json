@@ -1,0 +1,15 @@
+{
+    "name": "Painel de Compras",
+    "short_name": "Compras",
+    "start_url": "index.html",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#ff007f",
+    "icons": [
+        {
+            "src": "icon.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        }
+    ]
+}
